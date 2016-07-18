@@ -1,0 +1,41 @@
+import org.apache.spark.mllib.regression.LinearRegressionWithSGD
+import org.apache.spark.mllib.regression.LabeledPoint
+import org.apache.spark.mllib.linalg.Vectors
+
+
+import org.apache.spark.mllib.regression.LabeledPoint
+import org.apache.spark.mllib.regression.LinearRegressionModel
+import org.apache.spark.mllib.regression.LinearRegressionWithSGD
+import org.apache.spark.mllib.regression.RidgeRegressionModel
+import org.apache.spark.mllib.regression.RidgeRegressionWithSGD
+import org.apache.spark.mllib.linalg.Vectors
+
+
+val data = sc.textFile("data/mllib/ridge-data/data1.data")
+val parsedData = data.map { line =>
+  val parts = line.split(',')
+LabeledPoint(parts(0).toDouble, Vectors.dense(parts(1).split(' ').map(_.toDouble)))
+}.cache()
+
+val data = sc.textFile("data/mllib/ridge-data/data2.data")
+val parsedData = data.map { line =>
+  val parts = line.split(' ')
+LabeledPoint(parts(0).toDouble, Vectors.dense(parts(1).toDouble,parts(2).toDouble))
+}.cache()
+
+val numIterations = 100
+
+val model = LinearRegressionWithSGD.train(parsedData, numIterations)
+
+
+val valuesAndPreds = parsedData.map { point =>
+  val prediction = model.predict(point.features)
+  (point.label,point.features, prediction)
+}
+
+val MSE = valuesAndPreds.map{case(v, p) => math.pow((v - p), 2)}.mean()
+println("training Mean Squared Error = " + MSE)
+
+// Save and load model
+model.save(sc, "myModelPath")
+val sameModel = LinearRegressionModel.load(sc, "myModelPath")
